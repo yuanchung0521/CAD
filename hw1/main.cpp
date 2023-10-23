@@ -2,8 +2,10 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <set>
 
 using namespace std;
+
 int main (int argc, char *argv[]) {
 
     ifstream InputFile(argv[1]);
@@ -14,9 +16,9 @@ int main (int argc, char *argv[]) {
     vector<int> OnSet;
     vector<int> DcSet;
     vector<bool> display(3);
-
+    vector<string> PrimeImplicants;
     // Input data
-    display[0] = true;
+    display[0] = false;
     while (InputFile >> s) {
         if (s == ".i") {
             InputFile >> s;
@@ -39,7 +41,10 @@ int main (int argc, char *argv[]) {
         }
     }
     if (display[0]) cout << endl;
-
+    
     QuineMcCluskey QM(VarNum, OnSet, DcSet);
+    PrimeImplicants = QM.GeneratePrimImplicants();
+    
+    return 0;
 
 }
