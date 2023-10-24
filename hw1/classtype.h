@@ -2,6 +2,7 @@
 #include <string>
 #include <bitset>
 #include <algorithm>
+#include <set>
 using namespace std;
 
 struct QuineMcCluskey;
@@ -24,6 +25,36 @@ struct QuineMcCluskey {
     };
 };
 
+struct COLUMN;
+struct COLUMN {
+
+    string OnString;
+    int OnNum;
+    int length;
+    set<string> PrimeImplicants;
+
+    string IntToBinaryString(int num);
+    bool AppendPrimeImplicantsAndCheckIfItIsResult(vector<string>& Primes);
+    bool IsSubset (string imp);
+
+    COLUMN (int VarNum, int OnNum) : length(VarNum), OnNum(OnNum) {
+        OnString = IntToBinaryString(OnNum);
+    };
+};
+
+struct Petrick;
 struct Petrick {
+    vector<COLUMN*> POS;
+    vector<string> PrimeImplicants;
+    vector<string> Answer;
+    int length;
+
+    void GetPOS(const vector<int>& Ons);
+    void GetSOP();
+    void Recursive();
+
+    Petrick (int VarNum, const vector<int>& Ons, vector<string>& PrimeImplicants) : length(VarNum), PrimeImplicants(PrimeImplicants) {
+        GetPOS(Ons);
+    }
 
 };

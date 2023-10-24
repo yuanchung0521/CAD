@@ -42,9 +42,11 @@ int main (int argc, char *argv[]) {
     }
     if (display[0]) cout << endl;
     
-    QuineMcCluskey QM(VarNum, OnSet, DcSet);
-    PrimeImplicants = QM.GeneratePrimImplicants();
-    
+    QuineMcCluskey QMC(VarNum, OnSet, DcSet);
+    PrimeImplicants = QMC.GeneratePrimImplicants();
+
+    Petrick P(VarNum, OnSet, PrimeImplicants);
+
     return 0;
 
 }

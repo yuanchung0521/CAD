@@ -6,7 +6,7 @@ using namespace std;
 
 string QuineMcCluskey::IntToBinaryString(int num) {
     string binaryStr;
-    for (int i = this->length - 1; i >= 0; i--) {
+    for (int i = length - 1; i >= 0; i--) {
         int bit = (num >> i) & 1;
         binaryStr.push_back('0' + bit);
     }
@@ -23,12 +23,12 @@ bool compareByOnes(const string& a, const string& b) {
 vector<string> QuineMcCluskey::ConvertAndSort() {
     vector<string> binaryStrings;
 
-    for (int num : this->OnSet) {
+    for (int num : OnSet) {
         string binaryStr = IntToBinaryString(num);
         binaryStrings.push_back(binaryStr);
     }
 
-    for (int num : this->DcSet) {
+    for (int num : DcSet) {
         string binaryStr = IntToBinaryString(num);
         binaryStrings.push_back(binaryStr);
     }
