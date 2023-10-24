@@ -49,11 +49,12 @@ void Petrick::GetSOP() {
     cout << endl;
     for (string imp : MustUse) Answer.push_back(imp);
     for (string imp : Try) Answer.push_back(imp);
+    cout << MinLiteralsNum << " " << MustUseLiteralsNum << endl;
     MinLiteralsNum += MustUseLiteralsNum;
     for (string imp : Answer) cout << imp << " ";
     cout << endl;
-    cout << "prime imp= " << Answer.size();
-    cout << "literal= " << MinLiteralsNum;
+    cout << "prime imp= " << Answer.size() << endl;
+    cout << "literal= " << MinLiteralsNum << endl;
 
 }
 

@@ -55,7 +55,7 @@ struct ROW {
     ROW (string imp) : PrimeImplicant(imp) {
         literals = 0;
         for (int i=0; i<imp.size(); i++) {
-            if (imp[i] != '-') literals++;
+            if (imp[i] != 'X') literals++;
         }
     };
 };
