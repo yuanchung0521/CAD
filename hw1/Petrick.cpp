@@ -12,58 +12,42 @@ void Petrick::GetPOS(const vector<int>& Ons) {
     vector<int> CoveredIndex;
     for (int on : Ons) {
         col = new COLUMN(length, on, index);
-        Is_Solution =  col->AppendPrimeImplicantsAndCheckIfItIsResult(PrimeImplicants);
-        if (Is_Solution) {
-            MustUse.push_back((*col->PrimeImplicants.begin())->PrimeImplicant);
-            MustUseLiteralsNum += (*col->PrimeImplicants.begin())->literals;
+        col->IsSol = col->AppendPrimeImplicantsAndCheckIfItIsResult(PrimeImplicants);
+        POS.push_back(col);
+        index++;
+    }
+    for (COLUMN* col : POS) {
+        if (col->IsSol) {
+            if (MustUse.find((*col->PrimeImplicants.begin())->PrimeImplicant) == MustUse.end()) {
+                MustUse.insert((*col->PrimeImplicants.begin())->PrimeImplicant);
+                MustUseLiteralsNum += (*col->PrimeImplicants.begin())->literals;
+            }
             for (COLUMN* i : (*col->PrimeImplicants.begin())->OnSet) {
                 CoveredIndex.push_back(i->index);
             }
             col->PrimeImplicants.clear();
-            POS.push_back(col);
         }
-        else {
-            POS.push_back(col);
-        }
-        index++;
     }
     for (int bye : CoveredIndex) {
         POS[bye]->PrimeImplicants.clear();
-    }
-    for (COLUMN* col : POS) {
-        cout << col->OnNum << ": ";
-        for (ROW* row : col->PrimeImplicants) {
-            cout << row->PrimeImplicant << " ";
-        }
-        cout << endl;
     }
 }
 
 void Petrick::GetSOP() {
     set<string> P;
 	Recursive(P,0);
-    cout << "answer: " << endl;
-    for (string imp : Try) {
-        cout << imp << " ";
-    }
-    cout << endl;
-    for (string imp : MustUse) Answer.push_back(imp);
+    for (auto &imp : MustUse) Answer.push_back(imp);
     for (string imp : Try) Answer.push_back(imp);
-    cout << MinLiteralsNum << " " << MustUseLiteralsNum << endl;
     MinLiteralsNum += MustUseLiteralsNum;
-    for (string imp : Answer) cout << imp << " ";
-    cout << endl;
     cout << "prime imp= " << Answer.size() << endl;
     cout << "literal= " << MinLiteralsNum << endl;
 
 }
 
 void Petrick::Recursive(set<string> &P, int i) {
-    cout << i << endl;
+    
     if (i == POS.size()) { // find one set of SOP, which might be an answer
-        for (auto &s : P) {
-            cout << s << " ";
-        }
+        if (P.size() < MinPrimeImplicantsNum)
         if (NowLiteralsNum < MinLiteralsNum) {
             Try.clear();
             for (auto &s : P) {
@@ -72,7 +56,6 @@ void Petrick::Recursive(set<string> &P, int i) {
             MinLiteralsNum = NowLiteralsNum;
             MinPrimeImplicantsNum = Try.size();
         }
-        cout << endl;
         return;
     }
     if (POS[i]->PrimeImplicants.empty()) {
@@ -89,7 +72,6 @@ void Petrick::Recursive(set<string> &P, int i) {
                     P.erase(imp->PrimeImplicant);
                     NowLiteralsNum -= imp->literals;
                 }
-                
             }
             else {
                 Recursive(P, i+1);

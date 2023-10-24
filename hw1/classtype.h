@@ -35,6 +35,7 @@ struct COLUMN {
     int OnNum;
     int length;
     int index;
+    bool IsSol;
     set<ROW*> PrimeImplicants;
 
     string IntToBinaryString(int num);
@@ -64,7 +65,7 @@ struct Petrick;
 struct Petrick {
     vector<COLUMN*> POS;
     vector<ROW*> PrimeImplicants;
-    vector<string> MustUse;
+    set<string> MustUse;
     vector<string> Try;
     vector<string> Answer;
     int length;

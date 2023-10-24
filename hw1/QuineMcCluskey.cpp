@@ -35,9 +35,6 @@ vector<string> QuineMcCluskey::ConvertAndSort() {
 
     sort(binaryStrings.begin(), binaryStrings.end());
     sort(binaryStrings.begin(), binaryStrings.end(), compareByOnes);
-    for (string s : binaryStrings) {
-        cout << s << endl;
-    }
     return binaryStrings;
 }
 
@@ -55,7 +52,6 @@ string QuineMcCluskey::CheckAndMerge(const string& imp1, const string& imp2) {
 }
 
 vector<string> QuineMcCluskey::GeneratePrimImplicants() {
-    cout << "Prime Implicants:" << endl;
     while (!this->Implicants.empty()) {
         vector<string> newImplicants;
         vector<bool> used(Implicants.size(), false);
@@ -74,7 +70,6 @@ vector<string> QuineMcCluskey::GeneratePrimImplicants() {
 
             if (!used[i]) {
                 this->PrimeImplicants.push_back(Implicants[i]);
-                cout << Implicants[i] << endl;
             }
         }
         Implicants.clear();
