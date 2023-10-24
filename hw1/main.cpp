@@ -46,7 +46,7 @@ int main (int argc, char *argv[]) {
     PrimeImplicants = QMC.GeneratePrimImplicants();
 
     Petrick P(VarNum, OnSet, PrimeImplicants);
-
+    P.GetSOP();
     return 0;
 
 }

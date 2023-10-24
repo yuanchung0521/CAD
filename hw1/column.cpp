@@ -12,10 +12,11 @@ string COLUMN::IntToBinaryString(int num) {
     return binaryStr;
 }
 
-bool COLUMN::AppendPrimeImplicantsAndCheckIfItIsResult(vector<string>& Primes) {
+bool COLUMN::AppendPrimeImplicantsAndCheckIfItIsResult(vector<ROW*>& Primes) {
     for (int i=0; i<Primes.size(); i++) {
-        if (IsSubset(Primes[i])) {
+        if (IsSubset(Primes[i]->PrimeImplicant)) {
             PrimeImplicants.insert(Primes[i]);
+            Primes[i]->OnSet.push_back(this);
         }
     }
     if (PrimeImplicants.size() == 1) {

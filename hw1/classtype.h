@@ -7,6 +7,9 @@ using namespace std;
 
 struct QuineMcCluskey;
 struct Petrick;
+struct COLUMN;
+struct ROW;
+
 
 struct QuineMcCluskey {
     vector<string> Implicants;
@@ -25,35 +28,59 @@ struct QuineMcCluskey {
     };
 };
 
-struct COLUMN;
+
 struct COLUMN {
 
     string OnString;
     int OnNum;
     int length;
-    set<string> PrimeImplicants;
+    int index;
+    set<ROW*> PrimeImplicants;
 
     string IntToBinaryString(int num);
-    bool AppendPrimeImplicantsAndCheckIfItIsResult(vector<string>& Primes);
+    bool AppendPrimeImplicantsAndCheckIfItIsResult(vector<ROW*>& Primes);
     bool IsSubset (string imp);
 
-    COLUMN (int VarNum, int OnNum) : length(VarNum), OnNum(OnNum) {
+    COLUMN (int VarNum, int OnNum, int index) : length(VarNum), OnNum(OnNum), index(index) {
         OnString = IntToBinaryString(OnNum);
+    };
+};
+
+
+struct ROW {
+    string PrimeImplicant;
+    vector<COLUMN*> OnSet;
+    int literals;
+
+    ROW (string imp) : PrimeImplicant(imp) {
+        literals = 0;
+        for (int i=0; i<imp.size(); i++) {
+            if (imp[i] != '-') literals++;
+        }
     };
 };
 
 struct Petrick;
 struct Petrick {
     vector<COLUMN*> POS;
-    vector<string> PrimeImplicants;
+    vector<ROW*> PrimeImplicants;
+    vector<string> MustUse;
+    vector<string> Try;
     vector<string> Answer;
     int length;
+    int MinPrimeImplicantsNum;
+    int MinLiteralsNum, NowLiteralsNum, MustUseLiteralsNum;
 
     void GetPOS(const vector<int>& Ons);
     void GetSOP();
-    void Recursive();
+    void Recursive(set<string> &P, int i);
 
-    Petrick (int VarNum, const vector<int>& Ons, vector<string>& PrimeImplicants) : length(VarNum), PrimeImplicants(PrimeImplicants) {
+    Petrick (int VarNum, const vector<int>& Ons, vector<string>& Primes) : length(VarNum), MinPrimeImplicantsNum(Primes.size()), MinLiteralsNum(VarNum*Primes.size()), NowLiteralsNum(0), MustUseLiteralsNum(0) {
+        ROW *row;
+        for (string imp : Primes) {
+            row = new ROW(imp);
+            PrimeImplicants.push_back(row);
+        }
         GetPOS(Ons);
     }
 
