@@ -1,0 +1,29 @@
+.p 16
+ABCDEF'
+ABCD'EF
+ABC'DEF
+AB'C'D'E'F
+A'BC'D'E'F
+A'B'CD'E'
+A'B'CD'F'
+A'B'CE'F
+A'B'C'D
+A'B'C'E'F'
+A'B'DF
+A'B'D'E'F'
+A'CDEF
+B'CDE'F
+B'CD'EF'
+
+.mc 10
+ABCDEF'
+ABCD'EF
+ABC'DEF
+A'BC'D'E'F
+A'B'CD'E'
+A'B'C'D
+A'B'DF
+A'CDEF
+B'CD'EF'
+B'C'DEF'
+literal=52

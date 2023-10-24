@@ -1,0 +1,31 @@
+.p 54
+A'BCDF
+A'BCD'EF'
+A'BCD'EG'
+A'BCD'E'H'
+A'BCD'F'H'
+A'BCEH
+A'BCE'GH'
+A'BCFG'
+A'BCFH
+A'BC'DE'
+A'BC'GH
+A'BC'G'H'
+A'BDE'G
+A'BDFG'
+A'BDFH
+
+.mc 12
+A'BCEH
+A'BC'G'H'
+A'BDE'G
+A'BE'F
+A'B'CG'H
+A'B'C'D'EF'
+A'B'DEG'
+A'B'D'EGH'
+A'CDE'F
+A'C'D'E'FH'
+A'C'F'GH
+A'DEFH
+literal=62

@@ -1,0 +1,14 @@
+.p 7
+AB'C'
+AB'D'
+AC'D
+A'B
+A'C'D'
+BD
+B'C'D'
+
+.mc 3
+AB'D'
+AC'D
+A'B
+literal=8

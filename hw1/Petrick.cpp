@@ -39,15 +39,14 @@ void Petrick::GetSOP() {
     for (auto &imp : MustUse) Answer.push_back(imp);
     for (string imp : Try) Answer.push_back(imp);
     MinLiteralsNum += MustUseLiteralsNum;
-    cout << "prime imp= " << Answer.size() << endl;
-    cout << "literal= " << MinLiteralsNum << endl;
+    // cout << "prime imp= " << Answer.size() << endl;
+    // cout << "literal= " << MinLiteralsNum << endl;
 
 }
 
 void Petrick::Recursive(set<string> &P, int i) {
     
     if (i == POS.size()) { // find one set of SOP, which might be an answer
-        if (P.size() < MinPrimeImplicantsNum)
         if (NowLiteralsNum < MinLiteralsNum) {
             Try.clear();
             for (auto &s : P) {
