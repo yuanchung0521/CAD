@@ -1,4 +1,5 @@
-**C++ Code Overview:**
+# HW1 Quine-McCluskey Method
+## My C++ Code Overview:
 
 1. **312511052.cpp**:
    - This C++ program is to perform logic minimization using the Quine-McCluskey and Petrick methods, which is the main cpp file.
@@ -37,6 +38,8 @@
 
 ## How to Use
 1. **Compile the code** using a C++ compiler.
-2. **Run the program** with the following command:
-   ```make
+   ```
+   make
+3. **Run the program** with the following command:
+   ```
    ./312511052.o input_file output_file
