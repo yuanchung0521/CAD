@@ -52,6 +52,7 @@
         "utility": "cpp",
         "typeinfo": "cpp",
         "atomic": "cpp",
-        "typeindex": "cpp"
+        "typeindex": "cpp",
+        "regex": "cpp"
     }
 }
