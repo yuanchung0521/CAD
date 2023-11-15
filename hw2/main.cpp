@@ -2,8 +2,9 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <queue>
+#include <iomanip> 
 #include <regex>
-
 using namespace std;
 
 void readVerilogFile(const string& filename, MODULE* mod, LIB* lib) {
@@ -55,7 +56,7 @@ void readVerilogFile(const string& filename, MODULE* mod, LIB* lib) {
                     regex signal_regex("\\s*(\\w+),?");
                     smatch signal_match;
                     while (regex_search(signals, signal_match, signal_regex)) {
-                        mod->AllSignals.push_back(signal_match[1]);             // comment
+                        // mod->AllSignals.push_back(signal_match[1]);             // comment
                         signals = signal_match.suffix();
                     }
                 }
@@ -68,8 +69,8 @@ void readVerilogFile(const string& filename, MODULE* mod, LIB* lib) {
                     regex signal_regex("\\s*(\\w+),?");
                     smatch signal_match;
                     while (regex_search(signals, signal_match, signal_regex)) {
-                        mod->OutputSignals.push_back(signal_match[1]);             // comment
-                        newnet = new NET(signal_match[1],1);
+                        newnet = new NET(signal_match[1], 1);
+                        mod->OutputSignals.push_back(newnet);             // comment
                         mod->Netlist.insert(pair<string, NET*>(signal_match[1], newnet));
                         signals = signal_match.suffix();
                     }
@@ -83,8 +84,8 @@ void readVerilogFile(const string& filename, MODULE* mod, LIB* lib) {
                     regex signal_regex("\\s*(\\w+),?");
                     smatch signal_match;
                     while (regex_search(signals, signal_match, signal_regex)) {
-                        mod->InputSignals.push_back(signal_match[1]);             // comment
-                        newnet = new NET(signal_match[1],0);
+                        newnet = new NET(signal_match[1], 0);
+                        mod->InputSignals.push_back(newnet);             // comment
                         mod->Netlist.insert(pair<string, NET*>(signal_match[1], newnet));
                         signals = signal_match.suffix();
                     }
@@ -98,8 +99,8 @@ void readVerilogFile(const string& filename, MODULE* mod, LIB* lib) {
                     regex signal_regex("\\s*(\\w+),?");
                     smatch signal_match;
                     while (regex_search(signals, signal_match, signal_regex)) {
-                        mod->WireSignals.push_back(signal_match[1]);             // comment
                         newnet = new NET(signal_match[1],2);
+                        mod->WireSignals.push_back(newnet);             // comment
                         mod->Netlist.insert(pair<string, NET*>(signal_match[1], newnet));
                         signals = signal_match.suffix();
                     }
@@ -120,12 +121,22 @@ void readVerilogFile(const string& filename, MODULE* mod, LIB* lib) {
                     while (regex_search(gate_nets, net_match, net_regex)) {
                         string tmp = net_match[1];
                         if (tmp[0] == 'Z' && tmp[1] == 'N') {
-                            gate->Output = net_match[2];
-                            mod->Netlist.find(net_match[2])->second->GateInputList.push_back(gate);
+                            if (!mod->Netlist[net_match[2]]->GateOutputList.empty()) {
+                                for (auto& outgate : mod->Netlist[net_match[2]]->GateOutputList) {
+                                    outgate.second->FanIn.insert(pair<string, GATE*>(outgate.second->Inputs[net_match[2]], gate));
+                                    gate->FanOut.push_back(pair<string, GATE*>(outgate.second->Inputs[net_match[2]], outgate.second));
+                                }
+                            }
+                            mod->Netlist[net_match[2]]->GateInput = gate;
+                            gate->Output = mod->Netlist[net_match[2]];
                         }
                         else {
-                            gate->Inputs.push_back(net_match[2]);
-                            mod->Netlist.find(net_match[2])->second->GateOutputList.push_back(gate);
+                            if (mod->Netlist[net_match[2]]->GateInput != nullptr) {
+                                mod->Netlist[net_match[2]]->GateInput->FanOut.push_back(pair<string, GATE*>(net_match[1], gate));
+                                gate->FanIn.insert(pair<string, GATE*>(net_match[1], mod->Netlist[net_match[2]]->GateInput));
+                            }
+                            gate->Inputs.insert(pair<string, string>(net_match[2], net_match[1])); // NET* = mod->Netlist.find(net_match[2])->second
+                            mod->Netlist[net_match[2]]->GateOutputList.insert(pair<string, GATE*>(net_match[1], gate));
                         }
                         gate_nets = net_match.suffix();
                     }
@@ -170,16 +181,6 @@ void readVerilogFile(const string& filename, MODULE* mod, LIB* lib) {
     //     cout << endl;
     // }
 
-    for (pair<string, NET*> net : mod->Netlist) {
-        cout << "Net  " << net.second->Name;
-        for (GATE* gate : net.second->GateInputList) {
-            cout << ": " << gate->Name << " ";
-        }
-        for (GATE* gate : net.second->GateInputList) {
-            cout << "|| " << gate->Name << " ";
-        }
-        cout << endl;
-    }
     return;
 }
 
@@ -242,7 +243,6 @@ void readLibFile(ifstream& file, LIB* lib) {
             }
             else if (regex_match(line, tmp_match, cell_regex)) {
                 CELLTYPE* celltype = lib->NewCellType(tmp_match[1]);
-                cout << tmp_match[1] << endl;
                 readcell = false;
                 while (!readcell) {
                     getline(file, line);
@@ -264,7 +264,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                                 if (line.find("}") != string::npos) break;
                                                 tmp_string = line.substr(line.find("\"")+1, line.find("\\")-line.find("\"")-3);
                                                 stringstream ss(tmp_string);
-                                                vector<float> tmpvec;
+                                                vector<double> tmpvec;
                                                 while (getline(ss, str, ',')) tmpvec.push_back(stof(str));
                                                 celltype->PowerRiseTable.push_back(tmpvec);
 
@@ -275,7 +275,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                                 if (line.find("}") != string::npos) break;
                                                 tmp_string = line.substr(line.find("\"")+1, line.find("\\")-line.find("\"")-3);
                                                 stringstream ss(tmp_string);
-                                                vector<float> tmpvec;
+                                                vector<double> tmpvec;
                                                 while (getline(ss, str, ',')) tmpvec.push_back(stof(str));
                                                 celltype->PowerFallTable.push_back(tmpvec);
                                             }
@@ -285,7 +285,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                                 if (line.find("}") != string::npos) break;
                                                 tmp_string = line.substr(line.find("\"")+1, line.find("\\")-line.find("\"")-3);
                                                 stringstream ss(tmp_string);
-                                                vector<float> tmpvec;
+                                                vector<double> tmpvec;
                                                 while (getline(ss, str, ',')) tmpvec.push_back(stof(str));
                                                 celltype->CellRiseTable.push_back(tmpvec);
                                             }
@@ -295,7 +295,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                                 if (line.find("}") != string::npos) break;
                                                 tmp_string = line.substr(line.find("\"")+1, line.find("\\")-line.find("\"")-3);
                                                 stringstream ss(tmp_string);
-                                                vector<float> tmpvec;
+                                                vector<double> tmpvec;
                                                 while (getline(ss, str, ',')) tmpvec.push_back(stof(str));
                                                 celltype->CellFallTable.push_back(tmpvec);
                                             }
@@ -305,7 +305,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                                 if (line.find("}") != string::npos) break;
                                                 tmp_string = line.substr(line.find("\"")+1, line.find("\\")-line.find("\"")-3);
                                                 stringstream ss(tmp_string);
-                                                vector<float> tmpvec;
+                                                vector<double> tmpvec;
                                                 while (getline(ss, str, ',')) tmpvec.push_back(stof(str));
                                                 celltype->TransitionRiseTable.push_back(tmpvec);
                                             }
@@ -315,7 +315,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                                 if (line.find("}") != string::npos) break;
                                                 tmp_string = line.substr(line.find("\"")+1, line.find("\\")-line.find("\"")-3);
                                                 stringstream ss(tmp_string);
-                                                vector<float> tmpvec;
+                                                vector<double> tmpvec;
                                                 while (getline(ss, str, ',')) tmpvec.push_back(stof(str));
                                                 celltype->TransitionFallTable.push_back(tmpvec);
                                             }
@@ -348,6 +348,20 @@ void readLibFile(ifstream& file, LIB* lib) {
     return;
 }
 
+bool compareByLoad(const GATE* a, const GATE* b) {
+    if (a->OutCap != b->OutCap) {
+        return a->OutCap > b->OutCap;
+    }
+    return stoi(a->Name.substr(1)) < stoi(b->Name.substr(1));
+}
+
+bool compareByDelay(const GATE* a, const GATE* b) {
+    if (a->Delay != b->Delay) {
+        return a->Delay > b->Delay;
+    }
+    return stoi(a->Name.substr(1)) < stoi(b->Name.substr(1));
+}
+
 int main(int argc, char* argv[]) {
     
     if (argc != 4) {
@@ -364,15 +378,110 @@ int main(int argc, char* argv[]) {
             cerr << "Failed to open the .lib file." << endl;
             return 1;
         }
+        cout << "Read .lib File";
         readLibFile(libFile, &lib);
+        cout << " done." << endl;
     }
     // Read the .v file 
     string verilogFilename = argv[1];
     MODULE mod;
+    cout << "Read .v File";
     readVerilogFile(verilogFilename, &mod, &lib);
+    cout << " done." << endl;
+    
 
     // calculation begin
+    queue<GATE*> TopologicalSort;
+    GATE* gate;
+    for (NET* InputNet : mod.InputSignals) {
+        for (auto& gate : InputNet->GateOutputList) {
+            TopologicalSort.push(gate.second);
+            gate.second->Ready = (gate.second->FanIn.empty()) ? true : false;
+        }
+    }
 
+    while (!TopologicalSort.empty()) {
+        gate = TopologicalSort.front();
+        // cout << gate->Name << " " << gate->Ready << endl;
+        if (gate->Ready && !gate->Done) {
+            gate->getDelay(&lib);
+            for (auto& nextgate : gate->FanOut) {
+                TopologicalSort.push(nextgate.second);
+            }
+        }
+        TopologicalSort.pop();
+    }
+
+    ofstream loadFile("312511052_" + verilogFilename + "_load.txt");
+    ofstream delayFile("312511052_" + verilogFilename + "_delay.txt");
+    ofstream pathFile("312511052_" + verilogFilename + "_path.txt");
+
+    double MaxDelay = 0;
+    string net;
+    vector<NET*> LP;
+    for (NET* n : mod.OutputSignals) {
+        if (n->GateInput->ArriveTime > MaxDelay) {
+            net = n->Name;
+            MaxDelay = n->GateInput->ArriveTime;
+        } 
+    }
     
+    while (mod.Netlist[net]->Type != 0) {
+        LP.push_back(mod.Netlist[net]);
+        net = mod.Netlist[net]->GateInput->Inputs.begin()->first;
+    }
+    LP.push_back(mod.Netlist[net]);
+    
+
+    double MinDelay = mod.OutputSignals[0]->GateInput->ArriveTime;
+    net = mod.OutputSignals[0]->Name;
+    vector<NET*> SP;
+    for (NET* n : mod.OutputSignals) {
+        if (n->GateInput->ArriveTime < MinDelay) {
+            net = n->Name;
+            MinDelay = n->GateInput->ArriveTime;
+        } 
+    }
+    
+    while (mod.Netlist[net]->Type != 0) {
+        SP.push_back(mod.Netlist[net]);
+        net = mod.Netlist[net]->GateInput->Inputs.begin()->first;
+    }
+    SP.push_back(mod.Netlist[net]);
+    for (int i=SP.size()-1; i>=0; i--) {
+        cout << SP[i]->Name;
+        if (i > 0) cout << " -> ";
+        else if (i == 0) cout << endl;
+    }
+    
+    if (loadFile.is_open()) {
+        sort(mod.GateList.begin(), mod.GateList.end(), compareByLoad);
+        for (int i=0; i<mod.GateList.size(); i++) {
+            loadFile << mod.GateList[i]->Name << " " << fixed <<  setprecision(6) << mod.GateList[i]->OutCap << endl;
+        }
+        loadFile.close();
+        cout << "success" << endl;
+    }
+    else cout << "error" << endl;
+
+    sort(mod.GateList.begin(), mod.GateList.end(), compareByDelay);
+    for (GATE* gate : mod.GateList) {
+        delayFile << gate->Name << " " << gate->rise << " " << fixed <<  setprecision(6) << gate->Delay << " " << gate->TranDelay << endl;
+    }
+
+    pathFile << "Longest delay = " << fixed <<  setprecision(6) << MaxDelay-0.005 << ", the path is: ";
+    for (int i=LP.size()-1; i>=0; i--) {
+        pathFile << LP[i]->Name;
+        if (i > 0) pathFile << " -> ";
+        else if (i == 0) pathFile << endl;
+    }
+
+    pathFile << "Shortest delay = " << fixed <<  setprecision(6) << MinDelay-0.005 << ", the path is: ";
+    for (int i=SP.size()-1; i>=0; i--) {
+        pathFile << SP[i]->Name;
+        if (i > 0) pathFile << " -> ";
+        else if (i == 0) pathFile << endl;
+    }
+
     return 0;
 }
