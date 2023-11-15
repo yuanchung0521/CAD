@@ -10,6 +10,7 @@ struct CELLTYPE;
 struct LIB;
 struct GATE;
 struct MODULE;
+struct NET;
 
 struct PINTYPE {
     string Name;
@@ -47,7 +48,7 @@ struct LIB {
 };
 
 struct GATE {
-    string Type;
+    CELLTYPE* Type;
     string Name;
     string Output;
     vector<string> Inputs;
@@ -55,6 +56,15 @@ struct GATE {
 
 struct MODULE {
     string Name;
+    map<string, NET*> Netlist;
     vector<string> AllSignals, InputSignals, OutputSignals, WireSignals;
     vector<GATE*> GateList;
+};
+
+struct NET {
+    string Name;
+    vector<GATE*> GateInputList; // gate out == net in 
+    vector<GATE*> GateOutputList; // gate in == net out
+
+    NET (string name, int type) : Name(name) {}
 };

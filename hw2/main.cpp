@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void readVerilogFile(const string& filename, MODULE* mod) {
+void readVerilogFile(const string& filename, MODULE* mod, LIB* lib) {
     ifstream infile(filename);
     string line;
 
@@ -16,6 +16,8 @@ void readVerilogFile(const string& filename, MODULE* mod) {
     }
 
     bool command_block = false;
+    NET* newnet;
+    GATE* gate;
 
     while (getline(infile, line)) {
         
@@ -53,7 +55,7 @@ void readVerilogFile(const string& filename, MODULE* mod) {
                     regex signal_regex("\\s*(\\w+),?");
                     smatch signal_match;
                     while (regex_search(signals, signal_match, signal_regex)) {
-                        mod->AllSignals.push_back(signal_match[1]);
+                        mod->AllSignals.push_back(signal_match[1]);             // comment
                         signals = signal_match.suffix();
                     }
                 }
@@ -66,7 +68,9 @@ void readVerilogFile(const string& filename, MODULE* mod) {
                     regex signal_regex("\\s*(\\w+),?");
                     smatch signal_match;
                     while (regex_search(signals, signal_match, signal_regex)) {
-                        mod->OutputSignals.push_back(signal_match[1]);
+                        mod->OutputSignals.push_back(signal_match[1]);             // comment
+                        newnet = new NET(signal_match[1],1);
+                        mod->Netlist.insert(pair<string, NET*>(signal_match[1], newnet));
                         signals = signal_match.suffix();
                     }
                 }
@@ -79,7 +83,9 @@ void readVerilogFile(const string& filename, MODULE* mod) {
                     regex signal_regex("\\s*(\\w+),?");
                     smatch signal_match;
                     while (regex_search(signals, signal_match, signal_regex)) {
-                        mod->InputSignals.push_back(signal_match[1]);
+                        mod->InputSignals.push_back(signal_match[1]);             // comment
+                        newnet = new NET(signal_match[1],0);
+                        mod->Netlist.insert(pair<string, NET*>(signal_match[1], newnet));
                         signals = signal_match.suffix();
                     }
                 }
@@ -92,7 +98,9 @@ void readVerilogFile(const string& filename, MODULE* mod) {
                     regex signal_regex("\\s*(\\w+),?");
                     smatch signal_match;
                     while (regex_search(signals, signal_match, signal_regex)) {
-                        mod->WireSignals.push_back(signal_match[1]);
+                        mod->WireSignals.push_back(signal_match[1]);             // comment
+                        newnet = new NET(signal_match[1],2);
+                        mod->Netlist.insert(pair<string, NET*>(signal_match[1], newnet));
                         signals = signal_match.suffix();
                     }
                 }
@@ -102,9 +110,8 @@ void readVerilogFile(const string& filename, MODULE* mod) {
                 regex gate_regex("((\\w+)\\s*(\\w+)\\s*\\(([^;]+))\\);");
                 smatch gate_match;
                 if (regex_match(line, gate_match, gate_regex)) {
-                    GATE* gate;
                     gate = new GATE;
-                    gate->Type = gate_match[2];
+                    gate->Type = lib->CellTypeList[gate_match[2]];
                     gate->Name = gate_match[3];
                     string gate_nets = gate_match[4];
 
@@ -112,8 +119,14 @@ void readVerilogFile(const string& filename, MODULE* mod) {
                     smatch net_match;
                     while (regex_search(gate_nets, net_match, net_regex)) {
                         string tmp = net_match[1];
-                        if (tmp[0] == 'Z' && tmp[1] == 'N') gate->Output = net_match[2];
-                        else gate->Inputs.push_back(net_match[2]);
+                        if (tmp[0] == 'Z' && tmp[1] == 'N') {
+                            gate->Output = net_match[2];
+                            mod->Netlist.find(net_match[2])->second->GateInputList.push_back(gate);
+                        }
+                        else {
+                            gate->Inputs.push_back(net_match[2]);
+                            mod->Netlist.find(net_match[2])->second->GateOutputList.push_back(gate);
+                        }
                         gate_nets = net_match.suffix();
                     }
                     mod->GateList.push_back(gate);
@@ -156,6 +169,17 @@ void readVerilogFile(const string& filename, MODULE* mod) {
     //     }
     //     cout << endl;
     // }
+
+    for (pair<string, NET*> net : mod->Netlist) {
+        cout << "Net  " << net.second->Name;
+        for (GATE* gate : net.second->GateInputList) {
+            cout << ": " << gate->Name << " ";
+        }
+        for (GATE* gate : net.second->GateInputList) {
+            cout << "|| " << gate->Name << " ";
+        }
+        cout << endl;
+    }
     return;
 }
 
@@ -342,18 +366,13 @@ int main(int argc, char* argv[]) {
         }
         readLibFile(libFile, &lib);
     }
-    for(auto p: lib.CellTypeList) {
-        for (auto v : p.second->CellFallTable) {
-            for (float f : v) {
-                cout << f << " ";
-            }
-            cout << endl;
-        }
-        cout << endl;
-    }
-    cout << endl; 
+    // Read the .v file 
     string verilogFilename = argv[1];
     MODULE mod;
-    readVerilogFile(verilogFilename, &mod);
+    readVerilogFile(verilogFilename, &mod, &lib);
+
+    // calculation begin
+
+    
     return 0;
 }
