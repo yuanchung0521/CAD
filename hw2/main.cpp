@@ -122,9 +122,9 @@ void readVerilogFile(const string& filename, MODULE* mod, LIB* lib) {
                         string tmp = net_match[1];
                         if (tmp[0] == 'Z' && tmp[1] == 'N') {
                             if (!mod->Netlist[net_match[2]]->GateOutputList.empty()) {
-                                for (auto& outgate : mod->Netlist[net_match[2]]->GateOutputList) {
-                                    outgate.second->FanIn.insert(pair<string, GATE*>(outgate.second->Inputs[net_match[2]], gate));
-                                    gate->FanOut.push_back(pair<string, GATE*>(outgate.second->Inputs[net_match[2]], outgate.second));
+                                for (GATE* outgate : mod->Netlist[net_match[2]]->GateOutputList) {
+                                    outgate->FanIn.insert(pair<string, GATE*>(outgate->Inputs[net_match[2]], gate));
+                                    gate->FanOut.push_back(pair<string, GATE*>(outgate->Inputs[net_match[2]], outgate));
                                 }
                             }
                             mod->Netlist[net_match[2]]->GateInput = gate;
@@ -136,7 +136,7 @@ void readVerilogFile(const string& filename, MODULE* mod, LIB* lib) {
                                 gate->FanIn.insert(pair<string, GATE*>(net_match[1], mod->Netlist[net_match[2]]->GateInput));
                             }
                             gate->Inputs.insert(pair<string, string>(net_match[2], net_match[1])); // NET* = mod->Netlist.find(net_match[2])->second
-                            mod->Netlist[net_match[2]]->GateOutputList.insert(pair<string, GATE*>(net_match[1], gate));
+                            mod->Netlist[net_match[2]]->GateOutputList.push_back(gate);
                         }
                         gate_nets = net_match.suffix();
                     }
@@ -171,13 +171,16 @@ void readVerilogFile(const string& filename, MODULE* mod, LIB* lib) {
     
     // // Print gate information
     // for (GATE* gate : mod->GateList) {
-    //     cout << "Gate Type: " << gate->Type << endl;
     //     cout << "Gate Name: " << gate->Name << endl;
-    //     cout << "Output: " << gate->Output << endl;
-    //     cout << "Inputs: ";
-    //     for (const string& input : gate->Inputs) {
-    //         cout << input << " ";
+    //     cout << "Output: " << gate->Output->Name << endl;
+    //     for (auto& nextgate : gate->FanIn) {
+    //         cout << nextgate.second->Name << " ";
     //     }
+    //     cout << endl;
+    //     for (auto& nextgate : gate->FanOut) {
+    //         cout << nextgate.second->Name << " ";
+    //     }
+        
     //     cout << endl;
     // }
 
@@ -378,25 +381,25 @@ int main(int argc, char* argv[]) {
             cerr << "Failed to open the .lib file." << endl;
             return 1;
         }
-        cout << "Read .lib File";
+        // cout << "Read .lib File";
         readLibFile(libFile, &lib);
-        cout << " done." << endl;
+        // cout << " done." << endl;
     }
     // Read the .v file 
     string verilogFilename = argv[1];
     MODULE mod;
-    cout << "Read .v File";
+    // cout << "Read .v File";
     readVerilogFile(verilogFilename, &mod, &lib);
-    cout << " done." << endl;
+    // cout << " done." << endl;
     
 
     // calculation begin
     queue<GATE*> TopologicalSort;
     GATE* gate;
     for (NET* InputNet : mod.InputSignals) {
-        for (auto& gate : InputNet->GateOutputList) {
-            TopologicalSort.push(gate.second);
-            gate.second->Ready = (gate.second->FanIn.empty()) ? true : false;
+        for (GATE* gate : InputNet->GateOutputList) {
+            TopologicalSort.push(gate);
+            gate->Ready = (gate->FanIn.empty()) ? true : false;
         }
     }
 
@@ -412,6 +415,7 @@ int main(int argc, char* argv[]) {
         TopologicalSort.pop();
     }
 
+    verilogFilename = verilogFilename.substr(0, verilogFilename.length() - 2);
     ofstream loadFile("312511052_" + verilogFilename + "_load.txt");
     ofstream delayFile("312511052_" + verilogFilename + "_delay.txt");
     ofstream pathFile("312511052_" + verilogFilename + "_path.txt");
@@ -447,12 +451,12 @@ int main(int argc, char* argv[]) {
         SP.push_back(mod.Netlist[net]);
         net = mod.Netlist[net]->GateInput->Inputs.begin()->first;
     }
-    SP.push_back(mod.Netlist[net]);
-    for (int i=SP.size()-1; i>=0; i--) {
-        cout << SP[i]->Name;
-        if (i > 0) cout << " -> ";
-        else if (i == 0) cout << endl;
-    }
+    // SP.push_back(mod.Netlist[net]);
+    // for (int i=SP.size()-1; i>=0; i--) {
+    //     cout << SP[i]->Name;
+    //     if (i > 0) cout << " -> ";
+    //     else if (i == 0) cout << endl;
+    // }
     
     if (loadFile.is_open()) {
         sort(mod.GateList.begin(), mod.GateList.end(), compareByLoad);
@@ -460,9 +464,9 @@ int main(int argc, char* argv[]) {
             loadFile << mod.GateList[i]->Name << " " << fixed <<  setprecision(6) << mod.GateList[i]->OutCap << endl;
         }
         loadFile.close();
-        cout << "success" << endl;
+        // cout << "success" << endl;
     }
-    else cout << "error" << endl;
+    // else cout << "error" << endl;
 
     sort(mod.GateList.begin(), mod.GateList.end(), compareByDelay);
     for (GATE* gate : mod.GateList) {

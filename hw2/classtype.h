@@ -52,7 +52,7 @@ struct NET {
     string Name;
     int Type; // 0 for input, 1 for output, 2 for wire
     GATE* GateInput; // gate out == net in 
-    map<string, GATE*> GateOutputList; // (next gate input pin, next gate)
+    vector<GATE*> GateOutputList; // (gate name, (next gate input pin, next gate))
 
     NET (string name, int type) : Name(name), Type(type), GateInput(nullptr) {}
 };
@@ -67,7 +67,7 @@ struct GATE {
     vector<pair<string, GATE*>> FanOut; // (next gate input pin, next gate)
     double ArriveTime, Delay, OutCap, InTran, TranDelay, MaxTime; // InTran is the input transisition delay use to cal Delay, TranDelay is this cell's tran delay the next gate uses
     int rise;
-    GATE () : ArriveTime(0), Delay(0), OutCap(0), InTran(0), TranDelay(0), Ready(false), MaxTime(0) {}
+    GATE () : ArriveTime(0), Delay(0), OutCap(0), InTran(0), TranDelay(0), Ready(false), MaxTime(0), rise(0) {}
     void getOutCapAndInTran() {
         for (auto& gate : FanOut) {
             OutCap += gate.second->Type->InputPinList[gate.first]->Capacitance;
@@ -106,7 +106,7 @@ struct GATE {
         int lowIndex1, lowIndex2;
         
         if (OutCap < lib->Index1[1]) lowIndex1 = 0;
-        else if (OutCap >= lib->Index1[lib->Index1.size()-1]) lowIndex1 = lib->Index1.size()-1;
+        else if (OutCap >= lib->Index1[lib->Index1.size()-2]) lowIndex1 = lib->Index1.size()-2;
         else {
             for (int i=1; i<lib->Index1.size()-1; i++) {
                 if (lib->Index1[i] > OutCap) {
@@ -117,7 +117,7 @@ struct GATE {
         }
 
         if (InTran < lib->Index2[1]) lowIndex2 = 0;
-        else if (InTran >= lib->Index2[lib->Index2.size()-1]) lowIndex2 = lib->Index2.size()-1;
+        else if (InTran >= lib->Index2[lib->Index2.size()-2]) lowIndex2 = lib->Index2.size()-2;
         else {
             for (int i=1; i<lib->Index2.size()-1; i++) {
                 if (lib->Index2[i] > InTran) {
@@ -126,7 +126,7 @@ struct GATE {
                 }
             }
         }
-        
+        // cout << "index: " << lowIndex1 << " " << lowIndex2 << endl;
         double RiseDelay = Calculation(lib, Type->CellRiseTable, lowIndex1, lowIndex2);
         double FallDelay = Calculation(lib, Type->CellFallTable, lowIndex1, lowIndex2);
         // cout << RiseDelay << " " << FallDelay << endl;
@@ -136,7 +136,6 @@ struct GATE {
         double RiseTran = Calculation(lib, Type->TransitionRiseTable, lowIndex1, lowIndex2);
         double FallTran = Calculation(lib, Type->TransitionFallTable, lowIndex1, lowIndex2);
         TranDelay = (RiseDelay > FallDelay) ? RiseTran : FallTran;
-        cout << RiseTran << " " << FallTran << endl;
         
         for (auto& nextgate : FanOut) {
             bool allready = true;
