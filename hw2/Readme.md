@@ -1,4 +1,4 @@
-# HW1 Quine-McCluskey Method
+# HW2 Static Timing Analysis
 *Author:* Yuanchung Lee(李元中)
 
 *Sturdent ID:* 3125110522
