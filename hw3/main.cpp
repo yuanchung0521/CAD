@@ -136,6 +136,7 @@ void readVerilogFile(const string& filename, MODULE* mod, LIB* lib) {
                                 gate->FanIn.insert(pair<string, GATE*>(net_match[1], mod->Netlist[net_match[2]]->GateInput));
                             }
                             gate->Inputs.insert(pair<string, string>(net_match[2], net_match[1])); // NET* = mod->Netlist.find(net_match[2])->second
+                            gate->InputNets.insert(pair<string, NET*>(net_match[1], mod->Netlist[net_match[2]]));
                             mod->Netlist[net_match[2]]->GateOutputList.push_back(gate);
                         }
                         gate_nets = net_match.suffix();
@@ -237,12 +238,12 @@ void readLibFile(ifstream& file, LIB* lib) {
             else if (regex_match(line, tmp_match, index1_regex)) {
                 tmp_string = line.substr(line.find("(")+2, line.find(")")-line.find("(")-3);
                 stringstream ss(tmp_string);
-                while (getline(ss, str, ',')) lib->Index1.push_back(stof(str));
+                while (getline(ss, str, ',')) lib->Index1.push_back(stod(str));
             }
             else if (regex_match(line, tmp_match, index2_regex)) {
                 tmp_string = line.substr(line.find("(")+2, line.find(")")-line.find("(")-3);
                 stringstream ss(tmp_string);
-                while (getline(ss, str, ',')) lib->Index2.push_back(stof(str));
+                while (getline(ss, str, ',')) lib->Index2.push_back(stod(str));
             }
             else if (regex_match(line, tmp_match, cell_regex)) {
                 CELLTYPE* celltype = lib->NewCellType(tmp_match[1]);
@@ -258,7 +259,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                 if (line.find("direction") != string::npos) continue;
                                 else if (line.find("capacitance") != string::npos) {
                                     str = line.substr(line.find(":")+2, line.find(";")-line.find(":")-2);
-                                    pintype->Capacitance = stof(str);
+                                    pintype->Capacitance = stod(str);
                                 }
                                 else {
                                     while (getline(file, line)) {
@@ -268,7 +269,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                                 tmp_string = line.substr(line.find("\"")+1, line.find("\\")-line.find("\"")-3);
                                                 stringstream ss(tmp_string);
                                                 vector<double> tmpvec;
-                                                while (getline(ss, str, ',')) tmpvec.push_back(stof(str));
+                                                while (getline(ss, str, ',')) tmpvec.push_back(stod(str));
                                                 celltype->PowerRiseTable.push_back(tmpvec);
 
                                             }
@@ -279,7 +280,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                                 tmp_string = line.substr(line.find("\"")+1, line.find("\\")-line.find("\"")-3);
                                                 stringstream ss(tmp_string);
                                                 vector<double> tmpvec;
-                                                while (getline(ss, str, ',')) tmpvec.push_back(stof(str));
+                                                while (getline(ss, str, ',')) tmpvec.push_back(stod(str));
                                                 celltype->PowerFallTable.push_back(tmpvec);
                                             }
                                         }
@@ -289,7 +290,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                                 tmp_string = line.substr(line.find("\"")+1, line.find("\\")-line.find("\"")-3);
                                                 stringstream ss(tmp_string);
                                                 vector<double> tmpvec;
-                                                while (getline(ss, str, ',')) tmpvec.push_back(stof(str));
+                                                while (getline(ss, str, ',')) tmpvec.push_back(stod(str));
                                                 celltype->CellRiseTable.push_back(tmpvec);
                                             }
                                         }
@@ -299,7 +300,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                                 tmp_string = line.substr(line.find("\"")+1, line.find("\\")-line.find("\"")-3);
                                                 stringstream ss(tmp_string);
                                                 vector<double> tmpvec;
-                                                while (getline(ss, str, ',')) tmpvec.push_back(stof(str));
+                                                while (getline(ss, str, ',')) tmpvec.push_back(stod(str));
                                                 celltype->CellFallTable.push_back(tmpvec);
                                             }
                                         }
@@ -309,7 +310,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                                 tmp_string = line.substr(line.find("\"")+1, line.find("\\")-line.find("\"")-3);
                                                 stringstream ss(tmp_string);
                                                 vector<double> tmpvec;
-                                                while (getline(ss, str, ',')) tmpvec.push_back(stof(str));
+                                                while (getline(ss, str, ',')) tmpvec.push_back(stod(str));
                                                 celltype->TransitionRiseTable.push_back(tmpvec);
                                             }
                                         }
@@ -319,7 +320,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                                 tmp_string = line.substr(line.find("\"")+1, line.find("\\")-line.find("\"")-3);
                                                 stringstream ss(tmp_string);
                                                 vector<double> tmpvec;
-                                                while (getline(ss, str, ',')) tmpvec.push_back(stof(str));
+                                                while (getline(ss, str, ',')) tmpvec.push_back(stod(str));
                                                 celltype->TransitionFallTable.push_back(tmpvec);
                                             }
                                             readpin = true;
@@ -338,7 +339,7 @@ void readLibFile(ifstream& file, LIB* lib) {
                                 if (line.find("direction") != string::npos) continue;
                                 else if (line.find("capacitance") != string::npos) {
                                     str = line.substr(line.find(":")+2, line.find(";")-line.find(":")-2);
-                                    pintype->Capacitance = stof(str);
+                                    pintype->Capacitance = stod(str);
                                     readpin = true;
                                 }
                             }
@@ -349,6 +350,38 @@ void readLibFile(ifstream& file, LIB* lib) {
         }
     }
     return;
+}
+
+void readPatFile(ifstream& file, MODULE* mod, vector<vector<pair<string, bool>>>& pat) {
+    string line;
+    vector<string> inputOrder;
+    
+    getline(file, line);
+    size_t commaPos = line.find(",", 0);
+    while (commaPos != string::npos) {
+        inputOrder.push_back(line.substr(line.rfind(" ", commaPos) + 1, commaPos - line.rfind(" ", commaPos) -1 ));
+        commaPos = line.find(",", commaPos+1); 
+    }
+    inputOrder.push_back(line.substr(line.rfind(",", line.size()) + 2, line.size() - 1 - line.rfind(",", line.size())));
+    // cout << "===========" << endl;
+    // for (string order : inputOrder) {
+    //     cout << order << " ";
+    // }
+    // cout << endl << "============" << endl;
+    int i = 0;
+    vector<pair<string, bool>> input;
+    file >> line;
+    while (line.compare(".end") != 0) {
+        input.push_back(pair<string, bool>(inputOrder[i], ((line.compare("0") == 0) ? false : true)));
+        cout << i << " " << ((line.compare("0") == 0) ? false : true) << endl;
+        if (i == inputOrder.size()-1) {
+            pat.push_back(input);
+            i = 0;
+            input.clear();
+        }
+        else i++;
+        file >> line;
+    }
 }
 
 bool compareByLoad(const GATE* a, const GATE* b) {
@@ -367,7 +400,7 @@ bool compareByDelay(const GATE* a, const GATE* b) {
 
 int main(int argc, char* argv[]) {
     
-    if (argc != 4) {
+    if (argc != 5) {
         cerr << "Usage: " << argv[0] << " netlist_file -l test_lib.lib" << endl;
         return 1;
     }
@@ -391,75 +424,85 @@ int main(int argc, char* argv[]) {
     cout << "Read .v File";
     readVerilogFile(verilogFilename, &mod, &lib);
     cout << " done." << endl;
-    
+
+    vector<vector<pair<string, bool>>> Pattern;
+    cout << "Read .pat File";
+    ifstream patFile(argv[4]);
+    readPatFile(patFile, &mod, Pattern);
+    cout << " done." << endl;
+
+    verilogFilename = verilogFilename.substr(0, verilogFilename.length() - 2);
+    ofstream loadFile("312511052_" + verilogFilename + "_load.txt");
+    ofstream delayFile("312511052_" + verilogFilename + "_gate_info.txt");
+    ofstream powerFile("312511052_" + verilogFilename + "_gate_power.txt");
+    ofstream coverageFile("312511052_" + verilogFilename + "_coverage.txt");
 
     // calculation begin
     queue<GATE*> TopologicalSort;
+    vector<GATE*> SortedGateList;
     GATE* gate;
-    for (NET* InputNet : mod.InputSignals) {
-        for (GATE* gate : InputNet->GateOutputList) {
-            TopologicalSort.push(gate);
-            gate->Ready = (gate->FanIn.empty()) ? true : false;
+    double totalPower, toggleCoverage, toggleNum;
+    // cout << Pattern.size() << endl;
+    for (int i=0; i<Pattern.size(); i++) {
+        cout << "============== " << i << " ==============" << endl;
+        totalPower = 0;
+        toggleNum = 0;
+        for (auto& pair : Pattern[i]) {
+            mod.Netlist[pair.first]->Value = pair.second;
+            cout << mod.Netlist[pair.first]->Name << " " << pair.second << endl;
         }
-    }
 
-    while (!TopologicalSort.empty()) {
-        gate = TopologicalSort.front();
-        // cout << gate->Name << " " << gate->Ready << endl;
-        if (gate->Ready && !gate->Done) {
-            gate->getDelay(&lib);
-            for (auto& nextgate : gate->FanOut) {
-                TopologicalSort.push(nextgate.second);
+        if (i == 0) {
+            for (NET* InputNet : mod.InputSignals) {
+                for (GATE* gate : InputNet->GateOutputList) {
+                    TopologicalSort.push(gate);
+                    gate->Ready = (gate->FanIn.empty()) ? true : false;
+                    SortedGateList.push_back(gate);
+                }
+            }
+        
+            while (!TopologicalSort.empty()) {
+                gate = TopologicalSort.front();
+                // cout << gate->Name << " " << gate->Ready << gate->Done << endl;
+                if (gate->Ready && !gate->Done) {
+                    gate->CalOutputValue();
+                    gate->getOutputCapAndSwitchingPower();
+                    gate->getDelayAndPower(&lib, false); // should be done first time  
+                    for (auto& nextgate : gate->FanOut) {
+                        TopologicalSort.push(nextgate.second);
+                    }
+                    SortedGateList.push_back(gate);
+                    totalPower += gate->InternalPower;
+                    if (gate->toggle) totalPower += gate->SwitchingPower;
+                }
+                TopologicalSort.pop(); 
             }
         }
-        TopologicalSort.pop();
+        else {
+            for (int j=0; j< SortedGateList.size(); j++) {
+                gate = SortedGateList[j];
+                gate->Clean();
+                gate->CalOutputValue();
+                gate->getDelayAndPower(&lib, false);
+            }
+        }
+
+        for (GATE* gate : mod.GateList) {
+            delayFile << gate->Name << " " << gate->rise << " " << fixed <<  setprecision(6) << gate->Delay << " " << gate->TranDelay << endl;
+            powerFile << gate->Name << " " << fixed << setprecision(6) << gate->InternalPower << " " << gate->SwitchingPower << endl;
+            toggleNum = gate->Toggle0to1 + gate->Toggle1to0 + toggleNum;
+        }
+        toggleCoverage = toggleNum / (20 * mod.GateList.size());
+        coverageFile << i+1 << " " << totalPower << " " << toggleCoverage << endl;
+        delayFile << endl;
+        powerFile << endl;
     }
     cout << "sorted" << endl;
-    verilogFilename = verilogFilename.substr(0, verilogFilename.length() - 2);
-    ofstream loadFile("312511052_" + verilogFilename + "_load.txt");
-    ofstream delayFile("312511052_" + verilogFilename + "_delay.txt");
-    ofstream pathFile("312511052_" + verilogFilename + "_path.txt");
-
-    double MaxDelay = 0;
-    string net;
-    vector<NET*> LP;
-    for (NET* n : mod.OutputSignals) {
-        if (n->GateInput->ArriveTime > MaxDelay) {
-            net = n->Name;
-            MaxDelay = n->GateInput->ArriveTime;
-        } 
-    }
     
-    while (mod.Netlist[net]->Type != 0) {
-        LP.push_back(mod.Netlist[net]);
-        net = mod.Netlist[net]->GateInput->Inputs.begin()->first;
-    }
-    LP.push_back(mod.Netlist[net]);
     
-
-    double MinDelay = mod.OutputSignals[0]->GateInput->ArriveTime;
-    net = mod.OutputSignals[0]->Name;
-    vector<NET*> SP;
-    for (NET* n : mod.OutputSignals) {
-        if (n->GateInput->ArriveTime < MinDelay) {
-            net = n->Name;
-            MinDelay = n->GateInput->ArriveTime;
-        } 
-    }
-    
-    while (mod.Netlist[net]->Type != 0) {
-        SP.push_back(mod.Netlist[net]);
-        net = mod.Netlist[net]->GateInput->Inputs.begin()->first;
-    }
-    SP.push_back(mod.Netlist[net]); // the output isn't correct (path find error)
-    // for (int i=SP.size()-1; i>=0; i--) {
-    //     cout << SP[i]->Name;
-    //     if (i > 0) cout << " -> ";
-    //     else if (i == 0) cout << endl;
-    // }
 
     if (loadFile.is_open()) {
-        sort(mod.GateList.begin(), mod.GateList.end(), compareByLoad);
+        // sort(mod.GateList.begin(), mod.GateList.end(), compareByLoad);
         for (int i=0; i<mod.GateList.size(); i++) {
             loadFile << mod.GateList[i]->Name << " " << fixed <<  setprecision(6) << mod.GateList[i]->OutCap << endl;
         }
@@ -468,24 +511,8 @@ int main(int argc, char* argv[]) {
     }
     // else cout << "error" << endl;
 
-    sort(mod.GateList.begin(), mod.GateList.end(), compareByDelay);
-    for (GATE* gate : mod.GateList) {
-        delayFile << gate->Name << " " << gate->rise << " " << fixed <<  setprecision(6) << gate->Delay << " " << gate->TranDelay << endl;
-    }
-
-    pathFile << "Longest delay = " << fixed <<  setprecision(6) << MaxDelay-0.005 << ", the path is: ";
-    for (int i=LP.size()-1; i>=0; i--) {
-        pathFile << LP[i]->Name;
-        if (i > 0) pathFile << " -> ";
-        else if (i == 0) pathFile << endl;
-    }
-
-    pathFile << "Shortest delay = " << fixed <<  setprecision(6) << MinDelay-0.005 << ", the path is: ";
-    for (int i=SP.size()-1; i>=0; i--) {
-        pathFile << SP[i]->Name;
-        if (i > 0) pathFile << " -> ";
-        else if (i == 0) pathFile << endl;
-    }
+    // sort(mod.GateList.begin(), mod.GateList.end(), compareByDelay);
+    
 
     return 0;
 }
