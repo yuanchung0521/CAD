@@ -87,19 +87,21 @@ struct GATE {
                 InTran = (InputNets["A2"]->GateInput != nullptr) ? FanIn["A2"]->TranDelay : 0;
                 MaxTime = (InputNets["A2"]->GateInput != nullptr) ? FanIn["A2"]->ArriveTime : 0;
             }
-            else {
+            else if ((!InputNets["A1"]->Value) && (!InputNets["A2"]->Value)) {
                 if (InputNets["A1"]->GateInput == nullptr) InTran = FanIn["A2"]->TranDelay;
                 else if (InputNets["A2"]->GateInput == nullptr) InTran = FanIn["A1"]->TranDelay;
-                else {
-                    if (InputNets["A1"]->Value) InTran = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A1"]->TranDelay : FanIn["A2"]->TranDelay;
-                    else InTran = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A2"]->TranDelay : FanIn["A1"]->TranDelay;
-                }
+                else InTran = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A2"]->TranDelay : FanIn["A1"]->TranDelay;
+
                 if (InputNets["A1"]->GateInput == nullptr) MaxTime = FanIn["A2"]->ArriveTime;
                 else if (InputNets["A2"]->GateInput == nullptr) MaxTime = FanIn["A1"]->ArriveTime;
-                else {
-                    if (InputNets["A1"]->Value) MaxTime = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A1"]->ArriveTime : FanIn["A2"]->ArriveTime;
-                    else MaxTime = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A2"]->ArriveTime : FanIn["A1"]->ArriveTime;
-                }
+                else MaxTime = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A2"]->ArriveTime : FanIn["A1"]->ArriveTime;
+            }
+            else { // controlling
+                if ((InputNets["A1"]->GateInput == nullptr) || (InputNets["A2"]->GateInput == nullptr)) InTran = 0;
+                else InTran = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A1"]->TranDelay : FanIn["A2"]->TranDelay;
+
+                if ((InputNets["A1"]->GateInput == nullptr) || (InputNets["A2"]->GateInput == nullptr)) MaxTime = 0;
+                else MaxTime = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A1"]->ArriveTime : FanIn["A2"]->ArriveTime;
             }
         }
 
@@ -116,19 +118,21 @@ struct GATE {
                 InTran = (InputNets["A2"]->GateInput != nullptr) ? FanIn["A2"]->TranDelay : 0;
                 MaxTime = (InputNets["A2"]->GateInput != nullptr) ? FanIn["A2"]->ArriveTime : 0;
             }
-            else {
+            else if ((InputNets["A1"]->Value) && (InputNets["A2"]->Value)) {
                 if (InputNets["A1"]->GateInput == nullptr) InTran = FanIn["A2"]->TranDelay;
                 else if (InputNets["A2"]->GateInput == nullptr) InTran = FanIn["A1"]->TranDelay;
-                else {
-                    if (!InputNets["A1"]->Value) InTran = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A1"]->TranDelay : FanIn["A2"]->TranDelay;
-                    else InTran = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A2"]->TranDelay : FanIn["A1"]->TranDelay;
-                }
+                else InTran = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A2"]->TranDelay : FanIn["A1"]->TranDelay;
+
                 if (InputNets["A1"]->GateInput == nullptr) MaxTime = FanIn["A2"]->ArriveTime;
                 else if (InputNets["A2"]->GateInput == nullptr) MaxTime = FanIn["A1"]->ArriveTime;
-                else {
-                    if (!InputNets["A1"]->Value) MaxTime = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A1"]->ArriveTime : FanIn["A2"]->ArriveTime;
-                    else MaxTime = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A2"]->ArriveTime : FanIn["A1"]->ArriveTime;
-                }
+                else MaxTime = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A2"]->ArriveTime : FanIn["A1"]->ArriveTime;
+            }
+            else { // controlling
+                if ((InputNets["A1"]->GateInput == nullptr) || (InputNets["A2"]->GateInput == nullptr)) InTran = 0;
+                else InTran = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A1"]->TranDelay : FanIn["A2"]->TranDelay;
+
+                if ((InputNets["A1"]->GateInput == nullptr) || (InputNets["A2"]->GateInput == nullptr)) MaxTime = 0;
+                else MaxTime = (FanIn["A2"]->ArriveTime > FanIn["A1"]->ArriveTime) ? FanIn["A1"]->ArriveTime : FanIn["A2"]->ArriveTime;
             }
         }
 
@@ -222,7 +226,7 @@ struct GATE {
             }
         }
         ArriveTime = MaxTime + Delay;
-        // cout << Name << " Arr: " << ArriveTime << " Intran: " << InTran << " Max: " << MaxTime << " | " << Delay << " " << TranDelay << endl;
+        cout << Name << " Arr: " << ArriveTime << " Intran: " << InTran << " Max: " << MaxTime << " | " << Delay << " " << TranDelay << endl;
         Done = true;
     }
 
@@ -255,6 +259,7 @@ struct GATE {
         TranDelay = 0;
         MaxTime = 0;
         toggle = false;
+        InternalPower = 0;
     }
 };
 
@@ -263,8 +268,6 @@ struct MODULE {
     map<string, NET*> Netlist; // (netname, net*)
     vector<NET*> AllSignals, InputSignals, OutputSignals, WireSignals;
     vector<GATE*> GateList;
-    double TotalPower;
 
-    MODULE () : TotalPower(0) {}
 };
 

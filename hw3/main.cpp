@@ -373,7 +373,7 @@ void readPatFile(ifstream& file, MODULE* mod, vector<vector<pair<string, bool>>>
     file >> line;
     while (line.compare(".end") != 0) {
         input.push_back(pair<string, bool>(inputOrder[i], ((line.compare("0") == 0) ? false : true)));
-        cout << i << " " << ((line.compare("0") == 0) ? false : true) << endl;
+        // cout << i << " " << ((line.compare("0") == 0) ? false : true) << endl;
         if (i == inputOrder.size()-1) {
             pat.push_back(input);
             i = 0;
@@ -449,7 +449,7 @@ int main(int argc, char* argv[]) {
         toggleNum = 0;
         for (auto& pair : Pattern[i]) {
             mod.Netlist[pair.first]->Value = pair.second;
-            cout << mod.Netlist[pair.first]->Name << " " << pair.second << endl;
+            // cout << mod.Netlist[pair.first]->Name << " " << pair.second << endl;
         }
 
         if (i == 0) {
@@ -457,7 +457,6 @@ int main(int argc, char* argv[]) {
                 for (GATE* gate : InputNet->GateOutputList) {
                     TopologicalSort.push(gate);
                     gate->Ready = (gate->FanIn.empty()) ? true : false;
-                    SortedGateList.push_back(gate);
                 }
             }
         
@@ -484,6 +483,10 @@ int main(int argc, char* argv[]) {
                 gate->Clean();
                 gate->CalOutputValue();
                 gate->getDelayAndPower(&lib, false);
+                totalPower += gate->InternalPower;
+                if (gate->toggle) {
+                    totalPower += gate->SwitchingPower;
+                }
             }
         }
 
@@ -492,15 +495,15 @@ int main(int argc, char* argv[]) {
             powerFile << gate->Name << " " << fixed << setprecision(6) << gate->InternalPower << " " << gate->SwitchingPower << endl;
             toggleNum = gate->Toggle0to1 + gate->Toggle1to0 + toggleNum;
         }
-        toggleCoverage = toggleNum / (20 * mod.GateList.size());
-        coverageFile << i+1 << " " << totalPower << " " << toggleCoverage << endl;
+        toggleCoverage = toggleNum / (40 * mod.GateList.size()) * 100;
+        coverageFile << i+1 << " " << fixed << setprecision(6) << totalPower << " " << fixed << setprecision(2) << toggleCoverage << "%" << endl;
+
         delayFile << endl;
         powerFile << endl;
+        coverageFile << endl;
     }
     cout << "sorted" << endl;
     
-    
-
     if (loadFile.is_open()) {
         // sort(mod.GateList.begin(), mod.GateList.end(), compareByLoad);
         for (int i=0; i<mod.GateList.size(); i++) {
