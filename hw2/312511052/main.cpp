@@ -381,16 +381,16 @@ int main(int argc, char* argv[]) {
             cerr << "Failed to open the .lib file." << endl;
             return 1;
         }
-        cout << "Read .lib File";
+        // cout << "Read .lib File";
         readLibFile(libFile, &lib);
-        cout << " done." << endl;
+        // cout << " done." << endl;
     }
     // Read the .v file 
     string verilogFilename = argv[1];
     MODULE mod;
-    cout << "Read .v File";
+    // cout << "Read .v File";
     readVerilogFile(verilogFilename, &mod, &lib);
-    cout << " done." << endl;
+    // cout << " done." << endl;
     
 
     // calculation begin
@@ -414,28 +414,44 @@ int main(int argc, char* argv[]) {
         }
         TopologicalSort.pop();
     }
-    cout << "sorted" << endl;
+    // cout << "sorted" << endl;
     verilogFilename = verilogFilename.substr(0, verilogFilename.length() - 2);
     ofstream loadFile("312511052_" + verilogFilename + "_load.txt");
     ofstream delayFile("312511052_" + verilogFilename + "_delay.txt");
     ofstream pathFile("312511052_" + verilogFilename + "_path.txt");
 
     double MaxDelay = 0;
+    double Arrive = 0;
+    double Total = 0, tmp = 0;
     string net;
     vector<NET*> LP;
+    NET* outnet;
     for (NET* n : mod.OutputSignals) {
         if (n->GateInput->ArriveTime > MaxDelay) {
             net = n->Name;
             MaxDelay = n->GateInput->ArriveTime;
         } 
     }
-    
-    while (mod.Netlist[net]->Type != 0) {
-        LP.push_back(mod.Netlist[net]);
-        net = mod.Netlist[net]->GateInput->Inputs.begin()->first;
+    outnet = mod.Netlist[net];
+
+    while (outnet->Type != 0) {
+        LP.push_back(outnet);
+        Arrive = 0;
+        // cout << outnet->Name << endl;
+        Total += outnet->GateInput->Delay+0.005;
+        if (outnet->GateInput->FanIn.empty()) {
+            LP.push_back(mod.Netlist[outnet->GateInput->Inputs.begin()->first]);
+            break;
+        }
+        for (auto& gate : outnet->GateInput->FanIn) {
+            if (gate.second->ArriveTime > Arrive) {
+                Arrive = gate.second->ArriveTime;
+                outnet = gate.second->Output;
+            }
+        }
     }
-    LP.push_back(mod.Netlist[net]);
-    
+    // LP.push_back(outnet);
+    // cout << "Total=" << Total-0.005 << endl;+
 
     double MinDelay = mod.OutputSignals[0]->GateInput->ArriveTime;
     net = mod.OutputSignals[0]->Name;
@@ -447,11 +463,22 @@ int main(int argc, char* argv[]) {
         } 
     }
     
-    while (mod.Netlist[net]->Type != 0) {
-        SP.push_back(mod.Netlist[net]);
-        net = mod.Netlist[net]->GateInput->Inputs.begin()->first;
+    outnet = mod.Netlist[net];
+    while (outnet->Type != 0) {
+        SP.push_back(outnet);
+        Arrive = 0;
+        // cout << outnet->Name << endl;
+        if (outnet->GateInput->FanIn.empty()) {
+            SP.push_back(mod.Netlist[outnet->GateInput->Inputs.begin()->first]);
+            break;
+        }
+        for (auto& gate : outnet->GateInput->FanIn) {
+            if (gate.second->ArriveTime > Arrive) {
+                Arrive = gate.second->ArriveTime;
+                outnet = gate.second->Output;
+            }
+        }
     }
-    SP.push_back(mod.Netlist[net]); // the output isn't correct (path find error)
     // for (int i=SP.size()-1; i>=0; i--) {
     //     cout << SP[i]->Name;
     //     if (i > 0) cout << " -> ";
